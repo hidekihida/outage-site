@@ -5,7 +5,10 @@ export async function onRequest(context) {
   // GET: lista usuários
   if (request.method === "GET") {
     const result = await DB.prepare(
-      "SELECT id, username, display_name, is_member, last_login_at FROM users ORDER BY last_login_at DESC LIMIT 50;"
+      `SELECT id, username, display_name, is_member, last_login_at
+       FROM users
+       ORDER BY COALESCE(last_login_at, '1970-01-01T00:00:00.000Z') DESC
+       LIMIT 50;`
     ).all();
 
     return new Response(JSON.stringify(result.results), {
@@ -15,9 +18,16 @@ export async function onRequest(context) {
 
   // POST: cria/atualiza usuário
   if (request.method === "POST") {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: "JSON inválido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    // valores mínimos (faz fallback pra não quebrar)
     const id = body.id ?? crypto.randomUUID();
     const username = body.username ?? null;
     const display_name = body.display_name ?? null;
@@ -42,3 +52,4 @@ export async function onRequest(context) {
   }
 
   return new Response("Method not allowed", { status: 405 });
+}
