@@ -1,21 +1,9 @@
 export async function onRequest(context) {
-  const { request, env } = context;
-  const { DB } = env;
+  const { DB } = context.env;
 
-  if (request.method === "POST") {
-    const data = await request.json();
-
-    await DB.prepare(
-      "INSERT INTO users (name) VALUES (?);"
-    ).bind(data.name).run();
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  const result = await DB.prepare("SELECT * FROM users;").all();
+  const result = await DB
+    .prepare("PRAGMA table_info(users);")
+    .all();
 
   return new Response(
     JSON.stringify(result.results),
