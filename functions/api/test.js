@@ -2,13 +2,9 @@ export async function onRequest(context) {
   const { request, env } = context;
   const { DB } = env;
 
-  // GET: lista usuários
   if (request.method === "GET") {
     const result = await DB.prepare(
-      `SELECT id, username, display_name, is_member, last_login_at
-       FROM users
-       ORDER BY COALESCE(last_login_at, '1970-01-01T00:00:00.000Z') DESC
-       LIMIT 50;`
+      "SELECT * FROM users ORDER BY last_login_at DESC;"
     ).all();
 
     return new Response(JSON.stringify(result.results), {
@@ -16,23 +12,14 @@ export async function onRequest(context) {
     });
   }
 
-  // POST: cria/atualiza usuário
   if (request.method === "POST") {
-    let body;
-    try {
-      body = await request.json();
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: "JSON inválido" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const body = await request.json();
 
     const id = body.id ?? crypto.randomUUID();
     const username = body.username ?? null;
     const display_name = body.display_name ?? null;
     const is_member = body.is_member ?? 0;
-    const last_login_at = body.last_login_at ?? new Date().toISOString();
+    const last_login_at = new Date().toISOString();
 
     await DB.prepare(
       `INSERT INTO users (id, username, display_name, is_member, last_login_at)
@@ -52,4 +39,3 @@ export async function onRequest(context) {
   }
 
   return new Response("Method not allowed", { status: 405 });
-}
